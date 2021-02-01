@@ -1,0 +1,16 @@
+# Django dependencies
+Django==2.1
+psycopg2
+
+# Django Rest Framework dependencies
+djangorestframework
+django-cors-headers
+djangorestframework-jwt
+
+# Task scheduling dependencies
+celery
+redis
+requests
+
+# Email sending dependencies
+djmail

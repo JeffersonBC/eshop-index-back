@@ -1,0 +1,88 @@
+version: '3'
+
+services:
+  crawler:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    environment:
+      # Website global variables
+      CRAWLER_VOTE_ALIKE_UPPERBOUND: 50
+      CRAWLER_VOTE_ALIKE_LOWERBOUND: 30
+      CRAWLER_VOTE_TAG_UPPERBOUND: 50
+      CRAWLER_VOTE_TAG_LOWERBOUND: 30
+      CRAWLER_VOTE_RECOMENDATION_UPPERBOUND: 50
+      CRAWLER_VOTE_RECOMENDATION_LOWERBOUND: 30
+      # Django general security key
+      CRAWLER_SECRET_KEY: "chave-secreta"
+      # DB variables
+      CRAWLER_DB_NAME: "postgres"
+      CRAWLER_DB_USER: "postgres"
+      CRAWLER_DB_PASSWORD: "password"
+      CRAWLER_DB_HOST: "db"
+      # Celery/ Redis variables
+      CRAWLER_CELERY_BROKER_URL: "redis://redis:6379"
+      # Email variables
+      CRAWLER_WEBSITE_URL: 'http://localhost:4200/'
+      CRAWLER_EMAIL_ADDRESS: "eshopindex@eshopindex.com"
+      CRAWLER_EMAIL_PASSWORD: "password"
+      # reCAPTCHA
+      CRAWLER_RECAPTCHA_SECRET_KEY: "123456"
+    networks:
+      - default
+      - proxy
+    labels:
+      traefik.backend: crawler
+      traefik.frontend.entryPoints: http, https
+      traefik.frontend.rule: Host:api.eshop-index.app
+      traefik.docker.network: proxy
+      traefik.port: "8000"
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    command: celery -A eshop_crawler worker -B
+    depends_on:
+      - redis
+    environment:
+      # Website global variables
+      CRAWLER_VOTE_ALIKE_UPPERBOUND: 50
+      CRAWLER_VOTE_ALIKE_LOWERBOUND: 30
+      CRAWLER_VOTE_TAG_UPPERBOUND: 50
+      CRAWLER_VOTE_TAG_LOWERBOUND: 30
+      CRAWLER_VOTE_RECOMENDATION_UPPERBOUND: 50
+      CRAWLER_VOTE_RECOMENDATION_LOWERBOUND: 30
+      # Django general security key
+      CRAWLER_SECRET_KEY: "chave-secreta"
+      # DB variables
+      CRAWLER_DB_NAME: "postgres"
+      CRAWLER_DB_USER: "postgres"
+      CRAWLER_DB_PASSWORD: "password"
+      CRAWLER_DB_HOST: "db"
+      # Celery/ Redis variables
+      CRAWLER_CELERY_BROKER_URL: "redis://redis:6379"
+      # Email variables
+      CRAWLER_WEBSITE_URL: 'http://localhost:8000/'
+      CRAWLER_EMAIL_ADDRESS: "eshopindex@eshopindex.com"
+      CRAWLER_EMAIL_PASSWORD: "password"
+      # reCAPTCHA
+      CRAWLER_RECAPTCHA_SECRET_KEY: "123456"
+    networks:
+      - default
+    labels:
+      traefik.enable: "false"
+
+
+  redis:
+    image: redis:5.0-rc4-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - default
+    labels:
+      traefik.enable: "false"
+
+volumes:
+  redis_data:
+    driver: local

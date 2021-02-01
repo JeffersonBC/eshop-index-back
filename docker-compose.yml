@@ -1,0 +1,91 @@
+version: '3'
+
+services:
+  db:
+    image: postgres # Por padrão já expõe a porta 5432 pros outros containers
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:5.0-rc4-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+
+  crawler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python3 manage.py runserver 0.0.0.0:8000
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    environment:
+      # Website global variables
+      CRAWLER_VOTE_ALIKE_UPPERBOUND: 2
+      CRAWLER_VOTE_ALIKE_LOWERBOUND: 1
+      CRAWLER_VOTE_TAG_UPPERBOUND: 2
+      CRAWLER_VOTE_TAG_LOWERBOUND: 1
+      CRAWLER_VOTE_RECOMENDATION_UPPERBOUND: 2
+      CRAWLER_VOTE_RECOMENDATION_LOWERBOUND: 1
+      # Django general security key
+      CRAWLER_SECRET_KEY: "chave-secreta"
+      # DB variables
+      CRAWLER_DB_NAME: "postgres"
+      CRAWLER_DB_USER: "postgres"
+      CRAWLER_DB_PASSWORD: "password"
+      CRAWLER_DB_HOST: "db"
+      # Celery/ Redis variables
+      CRAWLER_CELERY_BROKER_URL: "redis://redis:6379"
+      # Email variables
+      CRAWLER_WEBSITE_URL: 'http://localhost:4200/'
+      CRAWLER_EMAIL_ADDRESS: "eshopindex@gmail.com"
+      CRAWLER_EMAIL_PASSWORD: "password"
+      # reCAPTCHA
+      CRAWLER_RECAPTCHA_SECRET_KEY: "6LfdXnoUAAAAAPnpP9y4yOf-r8JMwVFBOGbKrXq2"
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A eshop_crawler worker -B
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/code
+    environment:
+      # Website global variables
+      CRAWLER_VOTE_ALIKE_UPPERBOUND: 2
+      CRAWLER_VOTE_ALIKE_LOWERBOUND: 1
+      CRAWLER_VOTE_TAG_UPPERBOUND: 2
+      CRAWLER_VOTE_TAG_LOWERBOUND: 1
+      CRAWLER_VOTE_RECOMENDATION_UPPERBOUND: 2
+      CRAWLER_VOTE_RECOMENDATION_LOWERBOUND: 1
+      # Django general security key
+      CRAWLER_SECRET_KEY: "chave-secreta"
+      # DB variables
+      CRAWLER_DB_NAME: "postgres"
+      CRAWLER_DB_USER: "postgres"
+      CRAWLER_DB_PASSWORD: "password"
+      CRAWLER_DB_HOST: "db"
+      # Celery/ Redis variables
+      CRAWLER_CELERY_BROKER_URL: "redis://redis:6379"
+      # Email variables
+      CRAWLER_WEBSITE_URL: 'http://localhost:8000/'
+      CRAWLER_EMAIL_ADDRESS: "eshopindex@gmail.com"
+      CRAWLER_EMAIL_PASSWORD: "password"
+      # reCAPTCHA
+      CRAWLER_RECAPTCHA_SECRET_KEY: "6LfdXnoUAAAAAPnpP9y4yOf-r8JMwVFBOGbKrXq2"
+
+volumes:
+  postgres_data:
+    driver: local
+
+  redis_data:
+    driver: local
